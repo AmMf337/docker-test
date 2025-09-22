@@ -73,25 +73,34 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 #Solucion
 ### Dockerfile
 Se indica la imagen adecuada para la aplicación y se marca a la etapa con "AS build":
+
 ´´´
 FROM node:latest AS build
 ´´´
+
 Se indica el directorio de la app y se copia el contenido del json con la configuración y las dependencias:
+
 ´´´
 WORKDIR /app
 COPY package*.json ./
 ´´´
+
 Se instalan las dependencias establecidas en el archivo package.json ,se copia el codigo de la app yejecuta el script en el json:
+
 ´´´
 RUN npm install
 COPY . .
 RUN npm run build
 ´´´
+
 Se llama una imagen para el servidor web que mostrara la pagina:
+
 ´´´
 FROM nginx:alpine
 ´´´
-Se elimina cualqiuier archivo html previo, se copia el archivo de html de la pagina, se expone el puerto 80 de http y finalmente se utiliza se agrega un comando para correr nginx en primer plano en el contenedor.
+
+Se elimina cualqiuier archivo html previo, se copia el archivo de html de la pagina, se expone el puerto 80 de http y finalmente se utiliza se agrega un comando para correr nginx en primer plano en el contenedor:
+
 ´´´
 RUN rm -rf /usr/share/nginx/html/*
 
