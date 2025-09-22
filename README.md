@@ -74,31 +74,31 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 ### Dockerfile
 Se indica la imagen adecuada para la aplicación y se marca a la etapa con "AS build":
 
-<pre> ```
+<pre> 
 FROM node:latest AS build
-``` </pre>
+ </pre>
 
 Se indica el directorio de la app y se copia el contenido del json con la configuración y las dependencias:
 
-<pre> ```dockerfile WORKDIR /app COPY package*.json ./ ``` </pre>
+<pre> dockerfile WORKDIR /app COPY package*.json ./ </pre>
 
 Se instalan las dependencias establecidas en el archivo package.json ,se copia el codigo de la app yejecuta el script en el json:
 
-<pre> ```
+<pre>
 RUN npm install
 COPY . .
 RUN npm run build
- ``` </pre>
+  </pre>
 
 Se llama una imagen para el servidor web que mostrara la pagina:
 
-<pre> ```
+<pre>
 FROM nginx:alpine
-``` </pre>
+ </pre>
 
 Se elimina cualqiuier archivo html previo, se copia el archivo de html de la pagina, se expone el puerto 80 de http y finalmente se utiliza se agrega un comando para correr nginx en primer plano en el contenedor:
 
-<pre> ```
+<pre> 
 RUN rm -rf /usr/share/nginx/html/*
 
 COPY --from=build /app/build /usr/share/nginx/html
@@ -106,4 +106,69 @@ COPY --from=build /app/build /usr/share/nginx/html
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]
-``` </pre>
+</pre>
+
+
+### Github Worflow
+
+Nombre del workflow:
+
+<pre>
+name: Build and Push Docker Image
+</pre>
+ 
+Descencadenador del workflow,en este caso se le indica que el workflow se dispara cuando se hace push a la rama main:
+
+<pre>
+on:
+  push:
+    branches:
+      - main
+</pre>
+
+El campo **jobs** son las acciones que se realizaran en el workflow:
+
+Aqui se hace el build de la imagen y se elige en que sistema operativo se realizara dicho build:
+
+<pre>
+jobs:
+  build:
+    runs-on: ubuntu-latest
+</pre>
+
+Se da comienzo a los pasos del workflow en el campo **steps**, cada paso tiene un nombre y las acciones a ejecutar, el primero llamado "checkout repository" hace uso de un action de github que indica al runner de github que copie el código del repositorio y usara la versión 4 de dicha acción:
+
+<pre>
+    steps:
+   
+      - name: Checkout repository
+        uses: actions/checkout@v4
+</pre>
+
+Llama a otra action oficial de github que configura el build de la imagen en el runner:
+
+<pre>  
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+</pre>
+
+LLama a una acción que se encarga de realizar el login en dockerhub con las variables establecidas para el repositorio, para establecer estas variables se debe entrar a configuraciones, entrar a la pestaña "secretos y variables" y crear nuevas variables, estas ultimas deben ser nombradas exactamente de la manera en la que se referencian aqui:
+
+<pre>     
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+</pre>
+
+Finalmente se realiza la subida de la imagen a dockerhub a la cuenta con la que se inicio sesión con las credenciales:
+
+<pre>   
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/rick-morty:latest
+ </pre>
